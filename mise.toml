@@ -1,0 +1,16 @@
+min_version = "2026.11.12"
+
+# Every tool this project uses is pinned here, even if it's also installed globally:
+# a fresh clone plus `mise install` must be enough.
+
+[settings]
+# Rust's version comes from rust-toolchain.toml (the single source of truth, also read by
+# rustup and IDEs). Without this, a global `rust` entry would override that file, because
+# mise sets RUSTUP_TOOLCHAIN.
+idiomatic_version_file_enable_tools = ["rust"]
+
+[tools]
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.152"
+# bacon isn't in the mise registry. Its release zip bundles every platform; verified on
+# Windows only. If it picks the wrong binary on Linux/macOS, switch to "cargo:bacon".
+"github:Canop/bacon" = "3.26.0"
