@@ -55,7 +55,9 @@ backend (don't add or override GPUI crates directly). IPC transport: not designe
 
 ## Cross-platform
 
-Windows-first (developed and used there), but Linux and macOS must keep working.
+Windows-first (developed and used there). Linux and macOS are eventual targets, but we don't spend
+time on them, not even keeping them compiling, until the Windows beta works. Keep the habits below
+so porting stays cheap later.
 
 - Platform-facing code (IPC, GUI, HID, audio) uses libraries that abstract across platforms.
 - OS-specific code sits behind `cfg(target_os = …)` inside the crate that needs it; each crate
