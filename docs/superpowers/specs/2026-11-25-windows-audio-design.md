@@ -149,6 +149,9 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   is the friendly name ("Speakers (Schiit Modi 3+)"). `hardware_name` is
   `PKEY_DeviceInterface_FriendlyName`, which survives a rename. Volume is the 0.0–1.0 scalar that
   matches the Windows slider.
+- An **audio session** is Windows' term for one app's audio stream on one device: roughly one row in
+  the Volume Mixer, with its own volume and mute. One app can have several (one per device it plays on,
+  one per process, sometimes more than one per process).
 - `AppSession { device: DeviceId, pid: u32, exe_path: Option<PathBuf>, display_name: String, icon:
   Option<String>, volume: f32, muted: bool, system_sounds: bool }`. One per (device, pid). Windows can
   give one process several session handles on a device; they merge into one `AppSession`, as PCPanel's
