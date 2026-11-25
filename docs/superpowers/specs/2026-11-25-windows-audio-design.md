@@ -159,13 +159,27 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   name, the exe's version-info `ProductName`, the exe file name. System sounds are always shown as
   "System Sounds".
 - `Defaults`: (direction, role) → `Option<DeviceId>`.
-- `MuteAction { Mute, Unmute, Toggle }`. Toggle is resolved **once per call**: if any session the call
-  matches is unmuted, every matching session is muted; otherwise every one is unmuted. A "mute this app"
-  button therefore always ends with the app fully muted or fully unmuted, even when its sessions
-  disagreed. A merged `AppSession` reports `muted` only when all of its handles are muted. (Designer's
-  call. PCPanel on Windows works out the toggle per (device, pid), and on Linux per stream, so a
-  mismatch across devices stays in place for good. PCPanel on macOS already works out one state per app,
-  counting it muted only when all its audio is muted. This design extends that to every OS.)
+- `MuteAction { Mute, Unmute, Toggle(ToggleGrouping) }`. A toggle sorts the matched audio into groups,
+  then resolves each group the same way: if anything in it is unmuted, mute all of it; otherwise unmute
+  all of it. The caller picks the grouping per call:
+
+  | `ToggleGrouping` | One group is… | PCPanel did this on |
+  |---|---|---|
+  | `Call` (**default**) | everything the call matches | — |
+  | `App` | each `AppTarget` in the call, across all its devices and processes | macOS |
+  | `Session` | each `AppSession` (one pid on one device); its handles get the same value | Windows |
+  | `Stream` | each individual handle/stream, flipped from its own state | Linux |
+
+  - `ToggleGrouping` implements `Default` as `Call`, and `MuteAction::toggle()` builds the default.
+  - The default makes a "mute this app" button always end fully muted or fully unmuted, even when the
+    app's sessions disagreed. The other groupings reproduce PCPanel's behaviour on each OS.
+  - Selection is per call, so the daemon can expose it however it likes (per button, a global setting).
+  - Under `App`, a session matched by several targets belongs to the first.
+  - Groupings collapse where an OS has less structure. On macOS (one tap per app), `App`, `Session` and
+    `Stream` coincide. On Linux, `Session` and `Stream` usually do.
+  - Device mute ignores the grouping.
+  - A merged `AppSession` reports `muted` only when all of its handles are muted, so a `Stream` toggle
+    that leaves handles mixed reads as unmuted.
 - `AppTarget { Name(String), Pid(u32), SystemSounds }`, plus the one matching rule, a pure function: a
   name matches a session case-insensitively, ignoring a trailing `.exe` on either side, against the exe
   file name, the full exe path, or the display name. This keeps PCPanel's `AudioSession.matches` rule,
@@ -291,7 +305,8 @@ impl Audio {
 **Operations.**
 - Device volume and mute: `IAudioEndpointVolume::SetMasterVolumeLevelScalar` / `SetMute`.
 - App volume and mute: `ISimpleAudioVolume::SetMasterVolume` / `SetMute` on every matching handle.
-  Toggle is resolved once per call, as described under Shared types.
+  Toggle is resolved by its `ToggleGrouping`, as described under Shared types. The grouping logic is
+  pure and unit-tested for each grouping, including sessions that disagree.
 - Default: `IPolicyConfig::SetDefaultEndpoint(id, role)`, created per call (as PCPanel does) or once.
 - Per-app routing (`route_apps`, `app_route`): `SetPersistedDefaultAudioEndpoint(pid, flow, role,
   hstring)` for both `eConsole` and `eMultimedia`, and `GetPersistedDefaultAudioEndpoint(pid, flow,
