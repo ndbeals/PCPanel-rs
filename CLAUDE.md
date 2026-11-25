@@ -29,7 +29,7 @@ All crates are stubs for now. Stub crates mark their declared dependencies with
 code uses the crate. Split new crates out when a real boundary appears.
 
 Decided so far: GUI = [gpui-kit](https://gpui-kit.com/docs/getting-started/) (don't override its
-pinned GPUI crates; needs CMake, which gets pinned in `mise.toml` when gpui-kit is added). IPC
+pinned GPUI crates). IPC
 transport: not designed yet.
 
 ## Toolchain
@@ -39,6 +39,8 @@ transport: not designed yet.
   `mise.toml` `[tools]`. Check with `mise exec -- rustup show active-toolchain`.
 - **Every other tool** the project uses is pinned in the project `mise.toml`, even if it's
   installed globally. A fresh clone plus `mise install` must be enough.
+- **Building the GUI** needs the Visual Studio C++ build tools (MSVC + a Windows SDK); CMake
+  comes from `mise.toml`.
 - Workspace-wide settings (edition 2024, resolver 3, shared deps, lints) live in the root
   `Cargo.toml`; crates inherit them with `*.workspace = true`.
 

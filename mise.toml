@@ -11,6 +11,8 @@ idiomatic_version_file_enable_tools = ["rust"]
 
 [tools]
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.152"
+# gpui-kit's build needs CMake on PATH (https://gpui-kit.com/docs/installation).
+cmake = "4.5.1"
 
 # bacon isn't in the mise registry, and its release zip holds one directory per target.
 # Without a per-platform bin_path, mise puts every directory on PATH and Linux/macOS can run

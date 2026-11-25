@@ -14,6 +14,7 @@ pcpanel-core = { path = "crates/pcpanel-core" }
 pcpanel-hid = { path = "crates/pcpanel-hid" }
 pcpanel-audio = { path = "crates/pcpanel-audio" }
 pcpanel-ipc = { path = "crates/pcpanel-ipc" }
+gpui-kit = "0.11.0"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -26,3 +27,29 @@ debug = "line-tables-only"
 [profile.dev.package."*"]
 opt-level = 2
 debug = false
+
+# GPUI's hot crates at opt-level 3, per https://gpui-kit.com/docs/installation (slower first
+# build, much snappier debug UI).
+[profile.dev.package."gpui-pre"]
+opt-level = 3
+
+[profile.dev.package."gpui-pre-platform"]
+opt-level = 3
+
+[profile.dev.package."gpui-component"]
+opt-level = 3
+
+[profile.dev.package."gpui-kit"]
+opt-level = 3
+
+[profile.dev.package."gpui-kit-assets"]
+opt-level = 3
+
+[profile.dev.package.rustybuzz]
+opt-level = 3
+
+[profile.dev.package.taffy]
+opt-level = 3
+
+[profile.dev.package."ttf-parser"]
+opt-level = 3

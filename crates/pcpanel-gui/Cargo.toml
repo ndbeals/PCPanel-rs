@@ -16,3 +16,4 @@ path = "src/main.rs"
 [dependencies]
 pcpanel-core.workspace = true
 pcpanel-ipc.workspace = true
+gpui-kit.workspace = true
