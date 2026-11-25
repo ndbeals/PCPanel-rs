@@ -1,10 +1,19 @@
 //! Native (Win32) styling for the overlay window that GPUI doesn't expose.
+//!
+//! The only module in the workspace allowed to use `unsafe` (the workspace denies
+//! `unsafe_code`). Every Win32 call is an `unsafe fn` in the `windows` crate; each gets its own
+//! block and `// SAFETY:` comment. Shared invariant for all of them: `hwnd` comes from GPUI's
+//! live window via `raw-window-handle`, these functions are only called from the overlay's
+//! `open_window` build closure (window alive, UI thread), and the handle is never stored.
+#![allow(unsafe_code)]
 
 use std::ffi::c_void;
 
 use gpui_kit::Window;
 use raw_window_handle::{HasWindowHandle, RawWindowHandle};
-use windows::Win32::Foundation::{COLORREF, HWND};
+use windows::Win32::Foundation::{
+    COLORREF, ERROR_SUCCESS, GetLastError, HWND, SetLastError, WIN32_ERROR,
+};
 use windows::Win32::Graphics::Dwm::{
     DWMNCRENDERINGPOLICY, DWMNCRP_DISABLED, DWMWA_NCRENDERING_POLICY, DwmSetWindowAttribute,
 };
@@ -28,8 +37,8 @@ fn hwnd(window: &Window) -> Result<HWND, String> {
 pub fn remove_frame(window: &Window) -> Result<(), String> {
     let hwnd = hwnd(window)?;
     let policy = DWMNCRP_DISABLED;
-    // SAFETY: `hwnd` is GPUI's live window, we're on the UI thread, and `policy` outlives the
-    // call with the size we pass.
+    // SAFETY: valid live `hwnd` (module invariant). The pointer is to `policy`, a local that
+    // outlives the call, and the byte count is the size of that same type.
     unsafe {
         DwmSetWindowAttribute(
             hwnd,
@@ -38,23 +47,37 @@ pub fn remove_frame(window: &Window) -> Result<(), String> {
             size_of::<DWMNCRENDERINGPOLICY>() as u32,
         )
     }
-    .map_err(|e| e.to_string())
+    .map_err(|e| format!("DwmSetWindowAttribute: {e}"))
 }
 
 /// Let mouse clicks pass through the overlay to whatever window is underneath.
 pub fn enable_click_through(window: &Window) -> Result<(), String> {
     let hwnd = hwnd(window)?;
-    // SAFETY: `hwnd` is GPUI's live window and we're on the UI thread.
-    unsafe {
-        let style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
-        SetWindowLongPtrW(
-            hwnd,
-            GWL_EXSTYLE,
-            style | (WS_EX_LAYERED.0 | WS_EX_TRANSPARENT.0) as isize,
-        );
-        // A layered window stays invisible until its attributes are set; 255 = fully opaque,
-        // so GPUI's own per-pixel alpha is what shows.
-        SetLayeredWindowAttributes(hwnd, COLORREF(0), 255, LWA_ALPHA)
+
+    // SAFETY: valid live `hwnd` (module invariant); no pointers involved.
+    let style = unsafe { GetWindowLongPtrW(hwnd, GWL_EXSTYLE) };
+    // OR our bits in so GPUI's own extended styles (topmost, toolwindow, ...) survive.
+    let new_style = style | (WS_EX_LAYERED.0 | WS_EX_TRANSPARENT.0) as isize;
+
+    // `SetWindowLongPtrW` returns the previous value, so 0 means failure only if the thread's
+    // last-error code changed; clear it first so a stale code can't masquerade as a failure.
+    // SAFETY: only writes this thread's last-error slot.
+    unsafe { SetLastError(ERROR_SUCCESS) };
+    // SAFETY: valid live `hwnd` (module invariant); no pointers involved.
+    let previous = unsafe { SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style) };
+    if previous == 0 {
+        // SAFETY: only reads this thread's last-error slot.
+        let WIN32_ERROR(code) = unsafe { GetLastError() };
+        if code != 0 {
+            return Err(format!(
+                "SetWindowLongPtrW(GWL_EXSTYLE) failed: Win32 error {code}"
+            ));
+        }
     }
-    .map_err(|e| e.to_string())
+
+    // A layered window stays invisible until its attributes are set; 255 = fully opaque, so
+    // GPUI's own per-pixel alpha is what shows.
+    // SAFETY: valid live `hwnd` (module invariant), now layered; no pointers involved.
+    unsafe { SetLayeredWindowAttributes(hwnd, COLORREF(0), 255, LWA_ALPHA) }
+        .map_err(|e| format!("SetLayeredWindowAttributes: {e}"))
 }
