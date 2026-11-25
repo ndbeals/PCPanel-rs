@@ -14,3 +14,41 @@ idiomatic_version_file_enable_tools = ["rust"]
 # bacon isn't in the mise registry. Its release zip bundles every platform; verified on
 # Windows only. If it picks the wrong binary on Linux/macOS, switch to "cargo:bacon".
 "github:Canop/bacon" = "3.26.0"
+
+# Task bodies are plain cargo commands so they run the same in any shell on any OS.
+
+[tasks.build]
+description = "Build the whole workspace"
+run = "cargo build --workspace"
+
+[tasks.check]
+description = "Type-check the whole workspace, including tests"
+run = "cargo check --workspace --all-targets"
+
+[tasks.test]
+description = "Run all tests with nextest"
+run = "cargo nextest run --workspace --no-tests=pass"
+
+[tasks.fmt]
+description = "Format all crates"
+run = "cargo fmt --all"
+
+[tasks.lint]
+description = "Run clippy on the whole workspace"
+run = "cargo clippy --workspace --all-targets"
+
+[tasks.dev]
+description = "Watch and re-check on save (bacon)"
+run = "bacon"
+
+[tasks."run:daemon"]
+description = "Run the daemon (pcpaneld)"
+run = "cargo run -p pcpanel-daemon --"
+
+[tasks."run:cli"]
+description = "Run the CLI (pcpanel); args after `--` go to the binary"
+run = "cargo run -p pcpanel-cli --"
+
+[tasks."run:gui"]
+description = "Run the GUI (pcpanel-gui)"
+run = "cargo run -p pcpanel-gui --"
