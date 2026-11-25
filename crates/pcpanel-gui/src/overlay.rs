@@ -74,6 +74,10 @@ impl VolumeOverlay {
             is_resizable: false,
             is_minimizable: false,
             window_background: WindowBackgroundAppearance::Transparent,
+            // The overlay is never the active window, so GPUI's default inactive cap (~30 fps)
+            // would always apply. It only redraws on level changes and closes itself, so
+            // uncapping it costs nothing while idle.
+            inactive_frame_interval: None,
             window_bounds: Some(WindowBounds::Windowed(overlay_bounds(
                 display.visible_bounds(),
             ))),
