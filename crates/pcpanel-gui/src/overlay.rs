@@ -85,8 +85,14 @@ impl VolumeOverlay {
         // components), so its view is the window root.
         let opened = cx.open_window(options, |window, cx| {
             #[cfg(windows)]
-            if let Err(err) = crate::overlay_win32::remove_frame(window) {
-                eprintln!("volume overlay: couldn't remove window frame: {err}");
+            {
+                use crate::overlay_win32::{enable_click_through, remove_frame};
+                if let Err(err) = remove_frame(window) {
+                    eprintln!("volume overlay: couldn't remove window frame: {err}");
+                }
+                if let Err(err) = enable_click_through(window) {
+                    eprintln!("volume overlay: couldn't enable click-through: {err}");
+                }
             }
             cx.new(|_| OverlayView { level })
         });

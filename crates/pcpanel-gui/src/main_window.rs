@@ -35,7 +35,8 @@ impl MainWindow {
         let subscription = cx.subscribe_in(&slider, window, |this, _, event, _, cx| {
             if let SliderEvent::Change(value) = event {
                 let level = value.end();
-                this.overlay.update(cx, |overlay, cx| overlay.show(level, cx));
+                this.overlay
+                    .update(cx, |overlay, cx| overlay.show(level, cx));
             }
         });
 
@@ -53,7 +54,8 @@ impl MainWindow {
             cx.background_executor().timer(DELAYED_SHOW).await;
             let _ = this.update(cx, |this, cx| {
                 let level = this.slider.read(cx).value().end();
-                this.overlay.update(cx, |overlay, cx| overlay.show(level, cx));
+                this.overlay
+                    .update(cx, |overlay, cx| overlay.show(level, cx));
             });
         })
         .detach();
