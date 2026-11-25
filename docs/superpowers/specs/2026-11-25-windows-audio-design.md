@@ -180,11 +180,11 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   - `DefaultChanged { direction, role, device: Option<DeviceId> }`;
   - `SessionAdded(AppSession)`, `SessionRemoved { device, pid }`, `SessionChanged(AppSession)`.
 
-  Volume and mute changes carry `ours: bool`, which is true when the change came from this process. On
-  Windows: generate an event-context GUID when the backend starts, pass it on every set call, and
-  compare it in callbacks. It's per process, not fixed, so a change the CLI makes shows up in a running
-  daemon as `ours: false`. The daemon needs this to tell its own writes apart from everyone else's.
-  PCPanel's force-volume logic struggles without it.
+  Volume and mute changes carry `ours: bool`, which is true when PCPanel made the change. On Windows:
+  pass a fixed event-context GUID on every set call and compare it in callbacks. The daemon needs this
+  to tell its own writes apart from the user's. PCPanel's force-volume logic struggles without it. (All
+  CLI actions will go through the daemon eventually, so the CLI writing directly in the meantime isn't
+  worth distinguishing.)
 
 ### `pcpanel-audio` public API
 
