@@ -4904,6 +4904,8 @@ dependencies = [
  "gpui-kit",
  "pcpanel-core",
  "pcpanel-ipc",
+ "raw-window-handle",
+ "windows 0.62.2",
 ]
 
 [[package]]

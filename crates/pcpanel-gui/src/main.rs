@@ -2,6 +2,9 @@
 //! window plus an always-on-top volume overlay.
 
 mod main_window;
+mod overlay;
+#[cfg(windows)]
+mod overlay_win32;
 
 use gpui_kit::*;
 // Stub: keeps the declared dependency edges without unused-dependency warnings.
@@ -29,9 +32,20 @@ fn main() {
                 ))),
                 ..Default::default()
             };
-            open_window(options, cx, |window, cx| {
+            let (main, _) = open_window(options, cx, |window, cx| {
                 cx.new(|cx| MainWindow::new(window, cx))
             })
             .expect("failed to open the main window");
+
+            // Closing the main window quits the app, even while the volume overlay is up
+            // (otherwise the overlay's pending hide is dropped with the main view and the
+            // overlay window, and the process, live on).
+            let main_id = main.window_id();
+            cx.on_window_closed(move |cx, closed| {
+                if closed == main_id {
+                    cx.quit();
+                }
+            })
+            .detach();
         });
 }
