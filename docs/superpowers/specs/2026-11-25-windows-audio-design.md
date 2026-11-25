@@ -156,7 +156,11 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   name, the exe's version-info `ProductName`, the exe file name. System sounds are always shown as
   "System Sounds".
 - `Defaults`: (direction, role) → `Option<DeviceId>`.
-- `MuteAction { Mute, Unmute, Toggle }`. Toggle is resolved against the current state, per target.
+- `MuteAction { Mute, Unmute, Toggle }`. Toggle is resolved **once per call**: if any session the call
+  matches is unmuted, every matching session is muted; otherwise every one is unmuted. A "mute this app"
+  button therefore always ends with the app fully muted or fully unmuted, even when its sessions
+  disagreed. A merged `AppSession` reports `muted` only when all of its handles are muted. (Designer's
+  call: PCPanel flips each session on its own, which leaves a mismatch in place for good.)
 - `AppTarget { Name(String), Pid(u32), SystemSounds }`, plus the one matching rule, a pure function: a
   name matches a session case-insensitively, ignoring a trailing `.exe` on either side, against the exe
   file name, the full exe path, or the display name. This keeps PCPanel's `AudioSession.matches` rule,
@@ -177,8 +181,10 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   - `SessionAdded(AppSession)`, `SessionRemoved { device, pid }`, `SessionChanged(AppSession)`.
 
   Volume and mute changes carry `ours: bool`, which is true when the change came from this process. On
-  Windows: pass a fixed event-context GUID on every set call and compare it in callbacks. The daemon needs
-  this to tell its own writes apart from the user's. PCPanel's force-volume logic struggles without it.
+  Windows: generate an event-context GUID when the backend starts, pass it on every set call, and
+  compare it in callbacks. It's per process, not fixed, so a change the CLI makes shows up in a running
+  daemon as `ours: false`. The daemon needs this to tell its own writes apart from everyone else's.
+  PCPanel's force-volume logic struggles without it.
 
 ### `pcpanel-audio` public API
 
@@ -280,7 +286,7 @@ impl Audio {
 **Operations.**
 - Device volume and mute: `IAudioEndpointVolume::SetMasterVolumeLevelScalar` / `SetMute`.
 - App volume and mute: `ISimpleAudioVolume::SetMasterVolume` / `SetMute` on every matching handle.
-  Toggle resolves per session from its current mute.
+  Toggle is resolved once per call, as described under Shared types.
 - Default: `IPolicyConfig::SetDefaultEndpoint(id, role)`, created per call (as PCPanel does) or once.
 - Per-app routing (`route_apps`, `app_route`): `SetPersistedDefaultAudioEndpoint(pid, flow, role,
   hstring)` for both `eConsole` and `eMultimedia`, and `GetPersistedDefaultAudioEndpoint(pid, flow,
@@ -356,8 +362,9 @@ daemon's. If the `windows` crate or others bring a convention worth recording, a
 ## Left to the builder
 
 - Module layout inside `pcpanel-audio` and `pcpanel-core::audio`; exact type and field names.
-- The `windows` crate version and feature list (pin to the current release, under
-  `[target.'cfg(windows)'.dependencies]`).
+- The `windows` crate feature list, under `[target.'cfg(windows)'.dependencies]`. The version is
+  decided: `0.62`, the one `pcpanel-gui` already uses, so the workspace builds a single copy. Move it to
+  `[workspace.dependencies]` if that helps.
 - Whether `IPolicyConfig` or `IPolicyConfigVista` is used, and whether it's created per call or once.
 - Logging details (use `tracing`, as `pcpanel-hid` does), and whether the CLI installs a subscriber.
 - CLI output formatting.
