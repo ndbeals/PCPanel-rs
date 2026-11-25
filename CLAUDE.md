@@ -28,9 +28,8 @@ All crates are stubs for now. Stub crates mark their declared dependencies with
 `use <crate> as _;` to silence cargo's unused-dependency warning; delete those lines once real
 code uses the crate. Split new crates out when a real boundary appears.
 
-Decided so far: GUI = [gpui-kit](https://gpui-kit.com/docs/getting-started/) (don't override its
-pinned GPUI crates). IPC
-transport: not designed yet.
+Decided so far: GUI = [gpui-kit](https://gpui-kit.com/docs/getting-started/) with its `gpui-fast`
+backend (don't add or override GPUI crates directly). IPC transport: not designed yet.
 
 ## Toolchain
 

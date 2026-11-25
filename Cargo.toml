@@ -14,7 +14,8 @@ pcpanel-core = { path = "crates/pcpanel-core" }
 pcpanel-hid = { path = "crates/pcpanel-hid" }
 pcpanel-audio = { path = "crates/pcpanel-audio" }
 pcpanel-ipc = { path = "crates/pcpanel-ipc" }
-gpui-kit = "0.11.0"
+# GPUI Fast backend (https://github.com/longbridge/gpui-fast): verified for the overlay PoC.
+gpui-kit = { version = "0.11.0", features = ["gpui-fast"] }
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -37,6 +38,12 @@ opt-level = 3
 opt-level = 3
 
 [profile.dev.package."gpui-component"]
+opt-level = 3
+
+[profile.dev.package."gpui-fast"]
+opt-level = 3
+
+[profile.dev.package."gpui-fast-windows"]
 opt-level = 3
 
 [profile.dev.package."gpui-kit"]
