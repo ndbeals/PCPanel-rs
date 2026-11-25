@@ -163,7 +163,9 @@ Plain data, `Clone + Debug + PartialEq`. Names are indicative:
   matches is unmuted, every matching session is muted; otherwise every one is unmuted. A "mute this app"
   button therefore always ends with the app fully muted or fully unmuted, even when its sessions
   disagreed. A merged `AppSession` reports `muted` only when all of its handles are muted. (Designer's
-  call: PCPanel flips each session on its own, which leaves a mismatch in place for good.)
+  call. PCPanel on Windows works out the toggle per (device, pid), and on Linux per stream, so a
+  mismatch across devices stays in place for good. PCPanel on macOS already works out one state per app,
+  counting it muted only when all its audio is muted. This design extends that to every OS.)
 - `AppTarget { Name(String), Pid(u32), SystemSounds }`, plus the one matching rule, a pure function: a
   name matches a session case-insensitively, ignoring a trailing `.exe` on either side, against the exe
   file name, the full exe path, or the display name. This keeps PCPanel's `AudioSession.matches` rule,
@@ -321,6 +323,16 @@ including the state logic, is safe Rust.
 A stub backend. `Audio::start()` succeeds with empty capabilities, and every other call returns
 `AudioError::Unsupported`. That way a daemon on those OSes can still run its USB side later. The CLI
 prints "audio control isn't supported on this OS yet".
+
+How the API will map when those backends are built (from PCPanel's `linux/` and `osx/` code). This is
+recorded so the shared types don't paint them into a corner. Nothing here is built now.
+- **Linux (PulseAudio/PipeWire):** a session is a stream (sink input), each with its own volume and mute,
+  so app calls map directly. Per-app routing is a runtime move of the stream (`move-sink-input`), not
+  a remembered per-app setting as on Windows.
+- **macOS:** CoreAudio has no per-app volume or mute. PCPanel builds them from process taps (macOS 14.4+,
+  behind the one-time "System Audio Recording" consent), one per app, rendering to the default output.
+  So there's one "session" per app with no device dimension. `AppScope::Device` and per-app routing
+  would return `Unsupported`.
 
 ### `pcpanel` CLI
 
